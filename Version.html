@@ -1,3 +1,461 @@
-{
-"version": "1.1"
-}
+import random
+input_str = "3321431441224342314154114562135515254131216425123321634442412234"
+
+board = []
+row_length = 8
+
+for i in range(0, len(input_str), row_length):
+    row = [int(input_str[i + j]) for j in range(row_length)]
+    board.append(row)
+
+for row in board:
+    print(row)
+
+LEFT, RIGHT, TOP, BOTTOM = 0, 1, 2, 3
+MIN_MATCH = 3
+nMIN_MATCH = 4
+
+def isMatch(board):
+    rows = len(board)
+    cols = len(board[0])
+
+    for r in range(rows):
+        for c in range(cols - MIN_MATCH + 1):
+            if all(board[r][c+i] == board[r][c] for i in range(1, MIN_MATCH)):
+                return True
+
+    for r in range(rows - MIN_MATCH + 1):
+        for c in range(cols):
+            if all(board[r+i][c] == board[r][c] for i in range(1, MIN_MATCH)):
+                return True
+
+    return False
+    
+def isMatchn(board):
+    rows = len(board)
+    cols = len(board[0])
+
+    for r in range(rows):
+        for c in range(cols - nMIN_MATCH + 1):
+            if all(board[r][c+i] == board[r][c] for i in range(1, nMIN_MATCH)):
+                return True
+
+    for r in range(rows - nMIN_MATCH + 1):
+        for c in range(cols):
+            if all(board[r+i][c] == board[r][c] for i in range(1, nMIN_MATCH)):
+                return True
+
+    return False    
+    
+    
+def applyGravity(board):
+    rows = len(board)
+    cols = len(board[0])
+
+    # Get the letters one by one in random order
+    letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+    random_letters = random.sample(letters, len(letters))
+
+    # Iterate through each column, starting from the bottom
+    for c in range(cols):
+        empty_cells = 0
+        for r in range(rows - 1, -1, -1):
+            if board[r][c] == 0:
+                empty_cells += 1
+            else:
+                if empty_cells > 0:
+                    # Move the cell down by the number of empty cells below it
+                    board[r + empty_cells][c] = board[r][c]
+                    board[r][c] = 0
+
+        # Fill the remaining empty cells at the top one by one with the random letters
+        for r in range(empty_cells):
+            board[r][c] = random_letters.pop(0)  # Pop the first letter from the random_letters list
+
+
+def removeMatch(board, move):
+    rows = len(board)
+    cols = len(board[0])
+    r1, c1, r2, c2 = move
+
+    # Make the move on a copy of the board
+    board_copy = [row[:] for row in board]
+    board_copy[r1][c1], board_copy[r2][c2] = board_copy[r2][c2], board_copy[r1][c1]
+
+    def remove_horizontal(row, col, value):
+        start = col
+        end = col
+        while start >= 0 and board_copy[row][start] == value:
+            start -= 1
+        while end < cols and board_copy[row][end] == value:
+            end += 1
+
+        if end - start - 1 >= MIN_MATCH:
+            for c in range(start + 1, end):
+                board_copy[row][c] = 0
+
+    def remove_vertical(row, col, value):
+        start = row
+        end = row
+        while start >= 0 and board_copy[start][col] == value:
+            start -= 1
+        while end < rows and board_copy[end][col] == value:
+            end += 1
+
+        if end - start - 1 >= MIN_MATCH:
+            for r in range(start + 1, end):
+                board_copy[r][col] = 0
+
+    # Check and remove matches after the move
+    for r in range(rows):
+        for c in range(cols):
+            if board_copy[r][c] != 0:
+                match_length = getMatchLength(board_copy, r, c)
+                if match_length >= MIN_MATCH:
+                    remove_horizontal(r, c, board_copy[r][c])
+                    remove_vertical(r, c, board_copy[r][c])
+
+    # Apply gravity after removing matches
+    applyGravity(board_copy)
+
+    return board_copy
+        
+
+def makeBestMove(board):
+    rows = len(board)
+    cols = len(board[0])
+    valid_moves = []
+
+    for r in range(rows):
+        for c in range(cols):
+            # Check swap with right neighbor
+            if c + 1 < cols:
+                board[r][c], board[r][c + 1] = board[r][c + 1], board[r][c]
+                if isMatch(board):
+                    valid_moves.append((r, c, r, c + 1))
+                board[r][c], board[r][c + 1] = board[r][c + 1], board[r][c]
+
+            # Check swap with bottom neighbor
+            if r + 1 < rows:
+                board[r][c], board[r + 1][c] = board[r + 1][c], board[r][c]
+                if isMatch(board):
+                    valid_moves.append((r, c, r + 1, c))
+                board[r][c], board[r + 1][c] = board[r + 1][c], board[r][c]
+
+    return valid_moves
+    
+def nmakeBestMove(board):
+    rows = len(board)
+    cols = len(board[0])
+    valid_moves = []
+
+    for r in range(rows):
+        for c in range(cols):
+            # Check swap with right neighbor
+            if c + 1 < cols:
+                board[r][c], board[r][c + 1] = board[r][c + 1], board[r][c]
+                if isMatchn(board):
+                    valid_moves.append((r, c, r, c + 1))
+                board[r][c], board[r][c + 1] = board[r][c + 1], board[r][c]
+
+            # Check swap with bottom neighbor
+            if r + 1 < rows:
+                board[r][c], board[r + 1][c] = board[r + 1][c], board[r][c]
+                if isMatchn(board):
+                    valid_moves.append((r, c, r + 1, c))
+                board[r][c], board[r + 1][c] = board[r + 1][c], board[r][c]
+
+    return valid_moves    
+    
+    
+    
+
+def calculateMatchLength(board, move):
+    rows = len(board)
+    cols = len(board[0])
+    r1, c1, r2, c2 = move
+
+    # Make the move on a copy of the board
+    board_copy = [row[:] for row in board]
+    board_copy[r1][c1], board_copy[r2][c2] = board_copy[r2][c2], board_copy[r1][c1]
+
+    return max(
+        getMatchLength(board_copy, r1, c1),
+        getMatchLength(board_copy, r2, c2)
+    )
+
+def getMatchLength(board, row, col):
+    rows = len(board)
+    cols = len(board[0])
+    value = board[row][col]
+
+    # Check horizontal match
+    match_length_horizontal = 1
+    left = col - 1
+    while left >= 0 and board[row][left] == value:
+        match_length_horizontal += 1
+        left -= 1
+    right = col + 1
+    while right < cols and board[row][right] == value:
+        match_length_horizontal += 1
+        right += 1
+
+    # Check vertical match
+    match_length_vertical = 1
+    top = row - 1
+    while top >= 0 and board[top][col] == value:
+        match_length_vertical += 1
+        top -= 1
+    bottom = row + 1
+    while bottom < rows and board[bottom][col] == value:
+        match_length_vertical += 1
+        bottom += 1
+
+    return max(match_length_horizontal, match_length_vertical)
+
+def printBoard(board):
+    for row in board:
+        print(" ".join(str(cell) for cell in row))
+
+
+
+    
+    
+rows = len(board)
+cols = len(board[0])
+
+def isLeftUpGrid1Match(board, row, col):
+    matching_cell1 = []
+    if row  >= 2 and col  >= 3:
+        original_value = board[row][col]
+        if (
+            original_value == board[row][col-2]
+            == board[row][col-3]
+            == board[row-1][col - 1]
+            == board[row-2][col - 1]
+        ):
+            matching_cell1.append((row, col))
+            matching_cell1.append((row, col-1))
+    return matching_cell1
+
+def isLeftUpGrid2Match(board, row, col):
+    matching_cell2 = []
+    if row  >= 3 and col  >= 2:
+        original_value = board[row][col]
+        if (
+            original_value == board[row-2][col]
+            == board[row-3][col]
+            == board[row-1][col - 1]
+            == board[row-1][col - 2]
+        ):
+            matching_cell2.append((row, col))
+            matching_cell2.append((row-1, col))
+    return matching_cell2
+
+def isLeftDownGrid1Match(board, row, col):
+    matching_cell3 = []
+    if row <= 5 and col >= 3:
+        original_value = board[row][col]
+        if (
+            original_value == board[row][col-2]
+            == board[row][col-3]
+            == board[row+1][col - 1]
+            == board[row+2][col - 1]
+        ):
+            matching_cell3.append((row, col))
+            matching_cell3.append((row, col-1))
+    return matching_cell3
+
+def isLeftDownGrid2Match(board, row, col):
+    matching_cell4 = []
+    if row <= 4 and col >= 2:
+        original_value = board[row][col]
+        if (
+            original_value == board[row+2][col]
+            == board[row+3][col]
+            == board[row+1][col-1]
+            == board[row+1][col-2]
+        ):
+            matching_cell4.append((row, col))
+            matching_cell4.append((row+1, col))
+    return matching_cell4
+
+def isRightUpGrid1Match(board, row, col):
+    matching_cell5 = []
+    if row >= 2 and col <= 4:
+        original_value = board[row][col]
+        if (
+            original_value == board[row][col+2]
+            == board[row][col+3]
+            == board[row-1][col+1]
+            == board[row-2][col+1]
+        ):
+            matching_cell5.append((row, col))
+            matching_cell5.append((row, col+1))
+    return matching_cell5
+
+def isRightUpGrid2Match(board, row, col):
+    matching_cell6 = []
+    if row >= 3 and col <= 5:
+        original_value = board[row][col]
+        if (
+            original_value == board[row-2][col]
+            == board[row-3][col]
+            == board[row-1][col+1]
+            == board[row-1][col+2]
+        ):
+            matching_cell6.append((row, col))
+            matching_cell6.append((row-1, col))
+    return matching_cell6
+               
+def isRightDownGrid1Match(board, row, col):
+    matching_cell7 = []
+    if row <= 5 and col <= 4:
+        original_value = board[row][col]
+        if (
+            original_value == board[row][col+2]
+            == board[row][col+3]
+            == board[row+1][col+1]
+            == board[row+2][col+1]
+        ):
+            matching_cell7.append((row, col))
+            matching_cell7.append((row, col+1))
+    return matching_cell7
+
+def isRightDownGrid2Match(board, row, col):
+    matching_cell8 = []
+    if row <= 4 and col <= 5:
+        original_value = board[row][col]
+        if (
+            original_value == board[row+2][col]
+            == board[row+3][col]
+            == board[row+1][col+1]
+            == board[row+1][col+2]
+        ):
+            matching_cell8.append((row, col))
+            matching_cell8.append((row+1, col))
+    return matching_cell8
+               
+def isLeftTMatch(board, row, col):
+    matching_cell9 = []
+    if row <= 6 and col <= 4 and row >=1:
+        original_value = board[row][col]
+        if (
+            original_value == board[row-1][col+1]
+            == board[row+1][col+1]
+            == board[row][col+3]
+            == board[row][col+2]
+        ):
+            matching_cell9.append((row, col))
+            matching_cell9.append((row, col+1))
+    return matching_cell9
+
+def isRightTMatch(board, row, col):
+    matching_cell10 = []
+    if row <= 6 and col >= 3 and row >=1:
+        original_value = board[row][col]
+        if (
+            original_value == board[row+1][col-1]
+            == board[row-1][col-1]
+            == board[row][col-3]
+            == board[row][col-2]
+        ):
+            matching_cell10.append((row, col))
+            matching_cell10.append((row, col-1))
+    return matching_cell10
+
+def isTopTMatch(board, row, col):
+    matching_cell11 = []
+    if col >= 1 and col <= 6 and row <=4:
+        original_value = board[row][col]
+        if (
+            original_value == board[row+1][col-1]
+            == board[row+1][col+1]
+            == board[row+2][col]
+            == board[row+3][col]
+        ):
+            matching_cell11.append((row, col))
+            matching_cell11.append((row+1, col))
+    return matching_cell11
+    
+def isButtomTMatch(board, row, col):
+    matching_cell12 = []
+    if col >= 1 and col <= 6 and row >=3:
+        original_value = board[row][col]
+        if (
+            original_value == board[row-1][col-1]
+            == board[row-1][col+1]
+            == board[row-2][col]
+            == board[row-3][col]
+        ):
+            matching_cell12.append((row, col))
+            matching_cell12.append((row+1, col))
+    return matching_cell12
+    
+valid_l_shape_moves = []
+for r in range(rows):
+    for c in range(cols):
+        l_shape_match = (
+            isLeftUpGrid1Match(board, r, c) or
+            isLeftUpGrid2Match(board, r, c) or
+            isLeftDownGrid1Match(board, r, c) or
+            isLeftDownGrid2Match(board, r, c) or
+            isRightUpGrid1Match(board, r, c) or
+            isRightUpGrid2Match(board, r, c) or
+            isRightDownGrid1Match(board, r, c) or
+            isRightDownGrid2Match(board, r, c) or
+            isLeftTMatch(board, r, c) or
+            isRightTMatch(board, r, c) or
+            isTopTMatch(board, r, c) or
+            isButtomTMatch(board, r, c)
+        )
+        if l_shape_match:
+            valid_l_shape_moves.append((r, c))
+
+for move in valid_l_shape_moves:
+    print()
+    print(f"L-T Move Found: ({move[0]}, {move[1]}, {move[0]}, {move[1]+1})")
+    
+def has_valid_l_shape_move(board):
+    rows = len(board)
+    cols = len(board[0])
+
+    for r in range(rows):
+        for c in range(cols):
+            if (
+                isLeftUpGrid1Match(board, r, c) or
+                isLeftUpGrid2Match(board, r, c) or
+                isLeftDownGrid1Match(board, r, c) or
+                isLeftDownGrid2Match(board, r, c) or
+                isRightUpGrid1Match(board, r, c) or
+                isRightUpGrid2Match(board, r, c) or
+                isRightDownGrid1Match(board, r, c) or
+                isRightDownGrid2Match(board, r, c) or
+                isLeftTMatch(board, r, c) or
+                isRightTMatch(board, r, c) or
+                isTopTMatch(board, r, c) or
+                isButtomTMatch(board, r, c)
+            ):
+                return True
+
+    return False
+
+valid_moves = makeBestMove(board)
+new_board = []
+
+print("\nValid Moves:")
+for move in valid_moves:
+    match_length = calculateMatchLength(board, move)
+    temp_board = removeMatch(board, move)
+    l_shape_found = False
+    if has_valid_l_shape_move(temp_board):
+        l_shape_found = True
+    nvalid_moves = nmakeBestMove(temp_board)
+    if len(nvalid_moves) == 0 and match_length == 3:
+        continue
+    match_lengths = []
+    for nmove in nvalid_moves:
+        nmatch_length = calculateMatchLength(temp_board, nmove)
+        match_lengths.append(str(nmatch_length))
+    l_shape_str = "True" if l_shape_found else "False"
+    print(f"{move} --> {match_length} --> {', '.join(match_lengths)} --> {l_shape_str}")
